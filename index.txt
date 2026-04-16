@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 기반 시뮬레이션 디브리핑 어시스턴트</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Nanum+Myeongjo:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --navy: #1a365d;
+            --gold: #b7944d;
+            --slate: #334155;
+            --light-bg: #f8fafc;
+        }
+
+        * { box-sizing: border-box; }
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: #f1f5f9; margin: 0; padding: 20px; color: var(--slate); }
+        .container { max-width: 1000px; margin: 0 auto; background: white; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); overflow: hidden; }
+        header { background-color: var(--navy); color: white; padding: 40px; text-align: center; }
+        header h1 { font-family: 'Nanum Myeongjo', serif; margin: 0; font-size: 32px; }
+        header p { color: var(--gold); margin-top: 10px; font-weight: 500; }
+        .author { font-size: 14px; color: rgba(255,255,255,0.7); margin-top: 5px; letter-spacing: 1px; }
+        
+        .main-content { padding: 40px; }
+        .input-group { margin-bottom: 25px; }
+        label { display: block; font-weight: 700; margin-bottom: 10px; color: var(--navy); }
+        textarea, select { width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 8px; font-family: inherit; font-size: 16px; }
+        
+        .button-group { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
+        button { padding: 15px 25px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; transition: all 0.3s ease; font-size: 16px; }
+        .btn-primary { background-color: var(--navy); color: white; }
+        .btn-primary:hover { background-color: #122844; }
+        .btn-sparkle { background-color: white; color: var(--navy); border: 2px solid var(--navy); }
+        .btn-sparkle:hover { background-color: var(--navy); color: white; }
+        
+        #result-area { margin-top: 40px; padding: 30px; border-radius: 12px; background-color: var(--light-bg); border: 1px dashed var(--gold); display: none; }
+        .loading { display: none; text-align: center; margin: 20px 0; }
+        .loading i { animation: spin 1s linear infinite; font-size: 24px; color: var(--gold); }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .model-badge { display: inline-block; padding: 5px 12px; background: var(--gold); color: white; border-radius: 20px; font-size: 14px; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>✨ AI 디브리핑 전략 어시스턴트</h1>
+        <p>맞춤형 시뮬레이션 성찰 가이드 생성기</p>
+        <div class="author">by prof 윤지영</div>
+    </header>
+
+    <div class="main-content">
+        <div class="input-group">
+            <label for="scenario">1. 시뮬레이션 상황 기술</label>
+            <textarea id="scenario" rows="4" placeholder="예: 신입 간호사가 투약 전 환자 확인을 누락하고 약물을 투여하려는 긴급 상황..."></textarea>
+        </div>
+
+        <div class="input-group">
+            <label for="model-select">2. 적용하고 싶은 디브리핑 모델</label>
+            <select id="model-select">
+                <option value="DML">DML (의미 있는 학습 - 사고 과정 중심)</option>
+                <option value="3D">3D 모델 (정서적 해소 및 발견)</option>
+                <option value="Plus-Delta">Plus-Delta (강점 및 개선점)</option>
+                <option value="AI">Advocacy-Inquiry (옹호-탐구)</option>
+                <option value="PAAIL">PAAIL (좋은 판단을 갖춘 디브리핑)</option>
+            </select>
+        </div>
+
+        <div class="button-group">
+            <button class="btn-primary" onclick="generateDebriefing()">✨ 맞춤형 스크립트 생성</button>
+            <button class="btn-sparkle" onclick="getStrategicAdvice()">✨ 교육학적 전략 조언받기</button>
+        </div>
+
+        <div class="loading" id="loader">
+            <i class="fa-solid fa-spinner"></i> 시스템이 전략을 구성 중입니다...
+        </div>
+
+        <div id="result-area"><div id="result-content"></div></div>
+    </div>
+</div>
+
+<script>
+    // API 없이 작동하기 위한 가상 로직 (템플릿 엔진 방식)
+    function generateDebriefing() {
+        const scenario = document.getElementById('scenario').value;
+        const model = document.getElementById('model-select').value;
+        if (!scenario) return alert("시나리오를 입력해 주세요.");
+
+        showLoading(true);
+
+        // 1.5초 후 결과 출력 (AI가 분석하는 느낌 유도)
+        setTimeout(() => {
+            const result = `
+[${model} 모델 적용] 
+### 핵심 질문
+1. 당시 상황에서 가장 먼저 떠오른 생각은 무엇이었나요?
+2. 시나리오 과정 중 목표 달성을 방해한 요소는 무엇이었습니까?
+3. 유사한 상황이 재발한다면 어떤 행동 변화를 시도하시겠습니까?
+
+### 스크립트 예시
+**교수자:** "시나리오에서 나타난 '${scenario.substring(0, 20)}...' 상황에 대해 이야기해 봅시다. 이 과정에서 본인의 판단 근거는 무엇이었나요?"
+<br>**학습자:** (성찰 유도)
+            `;
+            displayResult(result);
+            showLoading(false);
+        }, 1500);
+    }
+
+    function getStrategicAdvice() {
+        const scenario = document.getElementById('scenario').value;
+        if (!scenario) return alert("시나리오를 입력해 주세요.");
+
+        showLoading(true);
+
+        setTimeout(() => {
+            const result = `
+### 교육학적 전략 조언
+1. **심리적 안전감 확보**: 학습자가 실수를 두려워하지 않도록 비판적 태도보다는 탐구적 질문을 던지세요.
+2. **폐쇄형 질문 지양**: "예/아니오" 보다는 "어떻게", "왜"를 활용한 개방형 질문으로 사고를 확장하세요.
+3. **인지적 부하 관리**: 복잡한 상황이므로 핵심적인 성찰 포인트 1~2개에 집중하는 것이 좋습니다.
+            `;
+            displayResult(result);
+            showLoading(false);
+        }, 1500);
+    }
+
+    function showLoading(isLoading) {
+        document.getElementById('loader').style.display = isLoading ? 'block' : 'none';
+        if(isLoading) document.getElementById('result-area').style.display = 'none';
+    }
+
+    function displayResult(text) {
+        let formattedText = text.replace(/### (.*)/g, '<h3 style="color:var(--navy);">$1</h3>')
+                                .replace(/\*\*(.*)\*\*/g, '<strong>$1</strong>')
+                                .replace(/\[(.*?)\]/g, '<span class="model-badge">$1</span>')
+                                .replace(/\n/g, '<br>');
+        document.getElementById('result-content').innerHTML = formattedText;
+        document.getElementById('result-area').style.display = 'block';
+    }
+</script>
+</body>
+</html>
