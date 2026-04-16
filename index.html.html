@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>시뮬레이션 디브리핑 전략 도우미</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Nanum+Myeongjo:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    :root {
+      --navy: #1a365d;
+      --gold: #b7944d;
+      --slate: #334155;
+      --light-bg: #f8fafc;
+      --line: #e2e8f0;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: #f1f5f9;
+      margin: 0;
+      padding: 20px;
+      color: var(--slate);
+      line-height: 1.7;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 18px;
+      box-shadow: 0 12px 28px rgba(0,0,0,0.10);
+      overflow: hidden;
+    }
+    header {
+      background: var(--navy);
+      color: white;
+      padding: 42px 32px;
+      text-align: center;
+    }
+    header h1 {
+      font-family: 'Nanum Myeongjo', serif;
+      margin: 0;
+      font-size: 2rem;
+    }
+    header p {
+      margin: 10px 0 0;
+      color: #f6e7be;
+      font-weight: 500;
+    }
+    .main-content { padding: 32px; }
+    .notice {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      padding: 18px 20px;
+      border-radius: 10px;
+      margin-bottom: 28px;
+      font-size: 15px;
+    }
+    .input-group { margin-bottom: 24px; }
+    label {
+      display: block;
+      font-weight: 700;
+      color: var(--navy);
+      margin-bottom: 10px;
+    }
+    textarea, select {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid var(--line);
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 16px;
+      background: white;
+    }
+    textarea:focus, select:focus {
+      outline: none;
+      border-color: var(--gold);
+    }
+    .button-group {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 24px;
+    }
+    button {
+      padding: 15px 18px;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: transform .15s ease, opacity .2s ease, background-color .2s ease;
+    }
+    button:hover { transform: translateY(-1px); }
+    .btn-primary {
+      background: var(--navy);
+      color: white;
+    }
+    .btn-secondary {
+      background: white;
+      color: var(--navy);
+      border: 2px solid var(--navy);
+    }
+    .btn-tertiary {
+      background: #f8fafc;
+      color: var(--slate);
+      border: 1px solid var(--line);
+      margin-top: 12px;
+      width: 100%;
+    }
+    #result-area {
+      display: none;
+      margin-top: 34px;
+      background: var(--light-bg);
+      border: 1px solid #e8dcc0;
+      border-radius: 14px;
+      padding: 28px;
+    }
+    .badge {
+      display: inline-block;
+      background: var(--gold);
+      color: white;
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+    .result-block h3 {
+      color: var(--navy);
+      margin-top: 24px;
+      margin-bottom: 8px;
+      font-size: 1.1rem;
+    }
+    .result-block ul {
+      padding-left: 20px;
+      margin-top: 8px;
+    }
+    .result-block li { margin-bottom: 6px; }
+    .helper {
+      font-size: 13px;
+      color: #64748b;
+      margin-top: 8px;
+    }
+    @media (max-width: 768px) {
+      .button-group { grid-template-columns: 1fr; }
+      .main-content { padding: 22px; }
+      header { padding: 34px 20px; }
+      header h1 { font-size: 1.6rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>시뮬레이션 디브리핑 전략 도우미</h1>
+      <p>API 없이 브라우저에서 바로 사용하는 정적 웹사이트 버전</p>
+    </header>
+
+    <div class="main-content">
+      <div class="notice">
+        이 버전은 외부 AI API를 사용하지 않습니다. 입력한 시뮬레이션 상황과 선택한 모델을 바탕으로,
+        브라우저 내부에서 디브리핑 질문 틀과 교수자 스크립트 예시를 생성합니다.
+      </div>
+
+      <div class="input-group">
+        <label for="scenario">1. 시뮬레이션 상황 기술</label>
+        <textarea id="scenario" rows="5" placeholder="예: 신규 간호사가 투약 전 환자 확인을 누락한 채 약물을 준비하였고, 동료가 이를 발견한 상황"></textarea>
+        <div class="helper">상황, 학습자 수준, 핵심 문제(예: 의사소통, 환자안전, 우선순위 판단)를 함께 적으면 결과가 더 구체적입니다.</div>
+      </div>
+
+      <div class="input-group">
+        <label for="learner">2. 학습자 수준</label>
+        <select id="learner">
+          <option value="간호학과 2학년">간호학과 2학년</option>
+          <option value="간호학과 3학년">간호학과 3학년</option>
+          <option value="간호학과 4학년" selected>간호학과 4학년</option>
+          <option value="신규간호사">신규간호사</option>
+          <option value="혼합 수준">혼합 수준</option>
+        </select>
+      </div>
+
+      <div class="input-group">
+        <label for="model-select">3. 적용할 디브리핑 모델</label>
+        <select id="model-select">
+          <option value="auto">상황에 맞는 추천 모델</option>
+          <option value="DML">DML</option>
+          <option value="3D">3D</option>
+          <option value="Plus-Delta">Plus-Delta</option>
+          <option value="AI">Advocacy-Inquiry</option>
+          <option value="PAAIL">PAAIL</option>
+        </select>
+      </div>
+
+      <div class="button-group">
+        <button class="btn-primary" onclick="generateDebriefing()"><i class="fa-solid fa-file-lines"></i> 디브리핑 스크립트 생성</button>
+        <button class="btn-secondary" onclick="getStrategicAdvice()"><i class="fa-solid fa-lightbulb"></i> 교수자 전략 보기</button>
+      </div>
+
+      <div id="result-area">
+        <div id="result-content" class="result-block"></div>
+        <button class="btn-tertiary" onclick="copyResult()"><i class="fa-regular fa-copy"></i> 결과 복사</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const modelGuide = {
+      "DML": {
+        name: "DML (Debriefing for Meaningful Learning)",
+        focus: "학습자의 사고과정과 임상판단을 깊이 탐색하는 데 적합합니다.",
+        structure: ["반응", "분석", "일반화", "적용"],
+        questions: [
+          "당시 어떤 정보를 가장 중요하게 보았습니까?",
+          "그 판단을 하게 된 근거는 무엇이었습니까?",
+          "다시 그 상황으로 돌아간다면 무엇을 우선 확인하겠습니까?",
+          "이 경험을 실제 임상에 어떻게 적용할 수 있겠습니까?"
+        ]
+      },
+      "3D": {
+        name: "3D 모델",
+        focus: "정서적 긴장을 완화하고 학습자가 경험을 구조화해 돌아보도록 돕습니다.",
+        structure: ["Defusing", "Discovering", "Deepening"],
+        questions: [
+          "상황 직후 가장 먼저 들었던 감정은 무엇이었습니까?",
+          "무엇이 잘 되었고 무엇이 어렵게 느껴졌습니까?",
+          "문제의 핵심 원인은 무엇이었다고 생각합니까?",
+          "다음 실습에서는 무엇을 달리할 수 있겠습니까?"
+        ]
+      },
+      "Plus-Delta": {
+        name: "Plus-Delta",
+        focus: "짧고 명확하게 강점과 개선점을 정리하기에 적합합니다.",
+        structure: ["Plus", "Delta"],
+        questions: [
+          "이번 수행에서 유지해야 할 강점은 무엇입니까?",
+          "다음에는 바꾸어야 할 행동은 무엇입니까?",
+          "팀 차원에서 계속 가져갈 점은 무엇입니까?",
+          "환자안전 향상을 위해 즉시 수정할 점은 무엇입니까?"
+        ]
+      },
+      "AI": {
+        name: "Advocacy-Inquiry",
+        focus: "교수자가 관찰한 사실을 제시한 뒤 학습자의 사고를 탐색하는 데 적합합니다.",
+        structure: ["관찰 제시", "의미 확인", "사고 탐색", "대안 구성"],
+        questions: [
+          "저는 이 지점에서 환자 확인이 충분하지 않았다고 보았습니다. 당시 어떻게 판단하셨나요?",
+          "그 행동이 적절하다고 느낀 이유는 무엇이었습니까?",
+          "놓친 정보가 있었다면 무엇이었습니까?",
+          "같은 상황에서 더 안전한 대안은 무엇입니까?"
+        ]
+      },
+      "PAAIL": {
+        name: "PAAIL",
+        focus: "좋은 판단을 기반으로 심층적 성찰과 안전한 학습 분위기 조성에 적합합니다.",
+        structure: ["Preview", "Advocacy", "Inquiry", "Learning"],
+        questions: [
+          "먼저 오늘 성찰의 목적을 함께 확인해 보겠습니다. 무엇을 배우고자 했습니까?",
+          "제가 관찰한 장면은 이러했습니다. 여러분은 어떻게 이해했습니까?",
+          "그 선택의 배경이 된 생각은 무엇입니까?",
+          "앞으로 유사 상황에서 어떤 기준으로 행동하겠습니까?"
+        ]
+      }
+    };
+
+    function escapeHtml(str) {
+      return str
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    function detectKeywords(text) {
+      const t = text.toLowerCase();
+      return {
+        safety: /(투약|낙상|오류|환자확인|안전|감염|오투약|identification|medication)/.test(t),
+        communication: /(의사소통|보고|인계|팀|보호자|설명|갈등|communication|sbAR|sbar)/.test(t),
+        priority: /(응급|악화|우선순위|긴급|호흡|심정지|쇼크|응급상황)/.test(t),
+        emotion: /(불안|당황|긴장|자신없|두려|침묵|위축)/.test(t)
+      };
+    }
+
+    function recommendModel(text) {
+      const k = detectKeywords(text);
+      if (k.safety && k.communication) return "AI";
+      if (k.priority || k.safety) return "DML";
+      if (k.emotion) return "3D";
+      return "Plus-Delta";
+    }
+
+    function buildCommonInsights(text, learner) {
+      const k = detectKeywords(text);
+      const items = [
+        `${learner} 수준에서 기대되는 핵심 역량은 상황 인지, 우선순위 판단, 근거 기반 의사결정입니다.`,
+        `디브리핑에서는 수행 결과 자체보다 '왜 그렇게 판단했는가'를 드러내는 질문이 중요합니다.`
+      ];
+      if (k.safety) items.push("환자안전 관련 상황이므로, 표준 절차 준수 여부와 오류 예방 체계를 함께 점검해야 합니다.");
+      if (k.communication) items.push("팀 의사소통이 포함된 상황이므로, 보고 방식과 협력 과정의 명료성을 함께 다루는 것이 필요합니다.");
+      if (k.priority) items.push("응급성 판단이 포함된 상황이므로, 사정-판단-중재의 우선순위를 단계적으로 재구성하도록 돕는 것이 좋습니다.");
+      if (k.emotion) items.push("학습자의 정서 반응이 성찰을 방해할 수 있으므로, 초기 반응 정리 단계가 선행되어야 합니다.");
+      return items;
+    }
+
+    function generateDebriefing() {
+      const scenario = document.getElementById('scenario').value.trim();
+      const learner = document.getElementById('learner').value;
+      let model = document.getElementById('model-select').value;
+
+      if (!scenario) {
+        alert('시뮬레이션 상황을 먼저 입력해 주세요.');
+        return;
+      }
+
+      const autoSelected = model === 'auto';
+      if (autoSelected) model = recommendModel(scenario);
+      const guide = modelGuide[model];
+      const insights = buildCommonInsights(scenario, learner);
+      const safeScenario = escapeHtml(scenario);
+
+      const html = `
+        <div class="badge">${autoSelected ? '추천 모델' : '선택 모델'}: ${guide.name}</div>
+        <h3>시나리오 요약</h3>
+        <p>${safeScenario}</p>
+
+        <h3>적용 이유</h3>
+        <p>${guide.focus}</p>
+
+        <h3>진행 구조</h3>
+        <ul>${guide.structure.map(item => `<li>${item}</li>`).join('')}</ul>
+
+        <h3>핵심 질문</h3>
+        <ul>${guide.questions.map(q => `<li>${q}</li>`).join('')}</ul>
+
+        <h3>교수자 스크립트 예시</h3>
+        <p>
+          "오늘 디브리핑의 목적은 수행을 평가하기보다, 여러분의 임상판단 과정을 함께 분석하는 데 있습니다."
+          <br><br>
+          "방금 상황에서 가장 먼저 주목한 정보는 무엇이었습니까?"
+          <br>
+          "그 판단을 하게 된 근거는 무엇이었습니까?"
+          <br>
+          "제가 관찰하기에는 중요한 안전 확인 단계가 일부 생략된 것으로 보였습니다. 당시에는 어떤 생각을 하고 있었는지 설명해 주시겠습니까?"
+          <br>
+          "이번 경험을 바탕으로 실제 임상에서 같은 상황이 오면 어떤 행동을 우선하겠습니까?"
+        </p>
+
+        <h3>교수자 해설 포인트</h3>
+        <ul>${insights.map(item => `<li>${item}</li>`).join('')}</ul>
+      `;
+
+      showResult(html);
+    }
+
+    function getStrategicAdvice() {
+      const scenario = document.getElementById('scenario').value.trim();
+      const learner = document.getElementById('learner').value;
+      if (!scenario) {
+        alert('시뮬레이션 상황을 먼저 입력해 주세요.');
+        return;
+      }
+      const model = recommendModel(scenario);
+      const k = detectKeywords(scenario);
+      const strategies = [
+        `${learner}에게는 비난보다 근거 확인 중심의 질문이 학습효과가 높습니다.`,
+        `교수자는 먼저 사실-판단-대안의 순서로 대화를 구조화하는 것이 좋습니다.`,
+        `성과 피드백은 강점 1~2개와 개선점 1~2개로 제한해 학습자 부담을 줄이는 것이 바람직합니다.`
+      ];
+      if (k.safety) strategies.push("환자안전 요소가 포함되므로, 단순 실수보다 시스템적 예방 전략까지 연결해 주는 것이 중요합니다.");
+      if (k.communication) strategies.push("의사소통 문제는 개인 역량만이 아니라 팀 상호작용의 결과일 수 있으므로, SBAR나 closed-loop communication 같은 구조화 전략을 함께 제시하는 것이 좋습니다.");
+      if (k.emotion) strategies.push("정서적 위축이 보이면 초기 1~2분은 감정 정리 질문으로 시작한 뒤 분석 단계로 이동하는 것이 효과적입니다.");
+
+      const html = `
+        <div class="badge">권장 접근: ${modelGuide[model].name}</div>
+        <h3>교육적 난점</h3>
+        <ul>
+          <li>학습자가 결과 중심으로만 상황을 해석하고 자신의 사고과정을 충분히 설명하지 못할 수 있습니다.</li>
+          <li>교수자가 즉시 교정하려고 하면 학습자의 자기성찰이 약화될 수 있습니다.</li>
+          <li>임상적 긴장감이 큰 상황일수록 정서 반응이 분석적 사고를 방해할 수 있습니다.</li>
+        </ul>
+
+        <h3>권장 교수 전략</h3>
+        <ul>${strategies.map(s => `<li>${s}</li>`).join('')}</ul>
+
+        <h3>마무리 질문</h3>
+        <ul>
+          <li>이번 경험에서 반드시 유지해야 할 행동은 무엇입니까?</li>
+          <li>다음 수행 전 체크리스트로 만들 수 있는 항목은 무엇입니까?</li>
+          <li>환자안전과 대상자 중심 간호 관점에서 가장 중요한 교훈은 무엇입니까?</li>
+        </ul>
+      `;
+      showResult(html);
+    }
+
+    function showResult(html) {
+      document.getElementById('result-content').innerHTML = html;
+      document.getElementById('result-area').style.display = 'block';
+      document.getElementById('result-area').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    async function copyResult() {
+      const text = document.getElementById('result-content').innerText;
+      try {
+        await navigator.clipboard.writeText(text);
+        alert('결과를 복사했습니다.');
+      } catch (e) {
+        alert('복사에 실패했습니다. 직접 선택하여 복사해 주세요.');
+      }
+    }
+  </script>
+</body>
+</html>
